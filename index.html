@@ -1,0 +1,901 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Chain Index</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=Archivo+Narrow:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#171A1C;
+  --surface:#20252A;
+  --surface-2:#2A3138;
+  --line:#39424A;
+  --text:#E8EAEA;
+  --text-dim:#98A2AA;
+  --signal:#E8B341;
+  --signal-dim:#8A6C28;
+  --good:#5FA88A;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html,body{margin:0;padding:0;}
+body{
+  background:var(--bg);
+  color:var(--text);
+  font-family:'Archivo',system-ui,sans-serif;
+  font-size:15px;
+  line-height:1.45;
+  padding-bottom:env(safe-area-inset-bottom);
+}
+.wrap{max-width:560px;margin:0 auto;}
+
+/* ---- header ---- */
+header{
+  padding:20px 16px 14px;
+  border-bottom:1px solid var(--line);
+  position:sticky;top:0;z-index:20;
+  background:var(--bg);
+}
+.masthead{display:flex;align-items:baseline;justify-content:space-between;gap:10px;}
+h1{
+  font-family:'Archivo Narrow',sans-serif;
+  font-weight:700;
+  font-size:22px;
+  letter-spacing:.02em;
+  margin:0;
+  text-transform:uppercase;
+}
+.count{
+  font-family:'IBM Plex Mono',monospace;
+  font-size:11px;
+  color:var(--signal);
+  white-space:nowrap;
+}
+.src{
+  font-family:'IBM Plex Mono',monospace;
+  font-size:10.5px;
+  color:var(--text-dim);
+  margin-top:2px;
+  letter-spacing:.02em;
+}
+
+/* search */
+.searchrow{display:flex;gap:8px;margin-top:12px;}
+#search{
+  flex:1;
+  background:var(--surface);
+  border:1px solid var(--line);
+  border-radius:3px;
+  color:var(--text);
+  font-family:'Archivo',sans-serif;
+  font-size:15px;
+  padding:11px 12px;
+}
+#search::placeholder{color:var(--text-dim);}
+#search:focus{outline:none;border-color:var(--signal);}
+#filterToggle{
+  background:var(--surface);
+  border:1px solid var(--line);
+  border-radius:3px;
+  color:var(--text);
+  font-family:'IBM Plex Mono',monospace;
+  font-size:11px;
+  letter-spacing:.06em;
+  padding:0 13px;
+  cursor:pointer;
+  white-space:nowrap;
+}
+#filterToggle.on{background:var(--signal);color:#171A1C;border-color:var(--signal);font-weight:600;}
+#filterToggle:focus-visible{outline:2px solid var(--signal);outline-offset:2px;}
+
+/* ---- filter panel ---- */
+#filters{display:none;padding:4px 16px 16px;border-bottom:1px solid var(--line);}
+#filters.open{display:block;}
+.fgroup{margin-top:16px;}
+.flabel{
+  font-family:'IBM Plex Mono',monospace;
+  font-size:10.5px;
+  letter-spacing:.14em;
+  text-transform:uppercase;
+  color:var(--text-dim);
+  margin-bottom:8px;
+}
+.chips{display:flex;flex-wrap:wrap;gap:6px;}
+.chip{
+  font-family:'Archivo',sans-serif;
+  font-size:13px;
+  padding:7px 11px;
+  background:var(--surface);
+  border:1px solid var(--line);
+  border-radius:100px;
+  color:var(--text-dim);
+  cursor:pointer;
+}
+.chip:hover{border-color:var(--text-dim);color:var(--text);}
+.chip:focus-visible{outline:2px solid var(--signal);outline-offset:1px;}
+.chip.active{background:var(--signal);border-color:var(--signal);color:#171A1C;font-weight:600;}
+#clearAll{
+  margin-top:18px;width:100%;
+  background:transparent;border:1px solid var(--line);border-radius:3px;
+  color:var(--text-dim);
+  font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.1em;
+  text-transform:uppercase;padding:11px;cursor:pointer;
+}
+#clearAll:hover{color:var(--text);border-color:var(--text-dim);}
+
+/* ---- tabs ---- */
+.tabs{display:flex;gap:0;margin-top:12px;border:1px solid var(--line);border-radius:3px;overflow:hidden;}
+.tab{
+  flex:1;background:var(--surface);border:none;color:var(--text-dim);
+  font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.1em;
+  text-transform:uppercase;padding:11px 8px;cursor:pointer;
+}
+.tab+.tab{border-left:1px solid var(--line);}
+.tab.on{background:var(--signal);color:#171A1C;font-weight:600;}
+.tab:focus-visible{outline:2px solid var(--signal);outline-offset:-3px;}
+
+/* ---- pick / recommender ---- */
+#pick{display:none;padding:8px 16px 48px;}
+#pick.open{display:block;}
+.pq{margin-top:22px;}
+.pq .flabel{margin-bottom:9px;}
+#runPick{
+  width:100%;margin-top:26px;
+  background:var(--signal);color:#171A1C;border:none;border-radius:3px;
+  font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:.1em;
+  text-transform:uppercase;font-weight:600;padding:14px;cursor:pointer;
+}
+#runPick:focus-visible{outline:2px solid var(--text);outline-offset:2px;}
+#pickNote{
+  font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--text-dim);
+  margin-top:12px;text-align:center;display:none;
+}
+#pickNote.show{display:block;}
+#results{margin-top:30px;}
+.rescard{
+  background:var(--surface);border:1px solid var(--line);border-left:3px solid var(--signal-dim);
+  border-radius:3px;padding:14px;margin-bottom:10px;cursor:pointer;width:100%;
+  text-align:left;color:var(--text);font-family:'Archivo',sans-serif;display:block;
+}
+.rescard:first-child{border-left-color:var(--signal);}
+.rescard:hover{background:var(--surface-2);}
+.rescard:focus-visible{outline:2px solid var(--signal);outline-offset:1px;}
+.restop{display:flex;align-items:baseline;justify-content:space-between;gap:10px;}
+.resrank{
+  font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--signal);
+  letter-spacing:.08em;margin-bottom:4px;
+}
+.resname{font-size:17px;font-weight:600;line-height:1.2;}
+.resscore{font-family:'IBM Plex Mono',monospace;font-size:14px;color:var(--signal);font-weight:600;}
+.resmeta{font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--text-dim);margin-top:3px;}
+.reswhy{font-size:13.5px;color:var(--text);margin-top:8px;line-height:1.45;}
+.reshead{
+  font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--text-dim);
+  padding-bottom:7px;border-bottom:1px solid var(--line);margin-bottom:14px;
+}
+.resempty{
+  border:1px dashed var(--line);border-radius:3px;padding:22px 16px;
+  text-align:center;color:var(--text-dim);font-size:14px;
+}
+.resempty b{display:block;color:var(--text);font-size:15px;margin-bottom:6px;}
+.caveat{
+  font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--text-dim);
+  margin-top:6px;line-height:1.5;
+}
+
+/* ---- list ---- */
+#list{padding:6px 0 40px;}
+.tierhead{
+  font-family:'IBM Plex Mono',monospace;
+  font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--signal);
+  padding:20px 16px 8px;
+  border-bottom:1px solid var(--line);
+}
+.row{
+  display:block;width:100%;text-align:left;
+  background:transparent;border:none;border-bottom:1px solid var(--line);
+  padding:13px 16px;cursor:pointer;color:var(--text);
+  font-family:'Archivo',sans-serif;
+}
+.row:hover{background:var(--surface);}
+.row:focus-visible{outline:2px solid var(--signal);outline-offset:-2px;}
+.rowtop{display:flex;align-items:baseline;justify-content:space-between;gap:12px;}
+.rname{font-size:16px;font-weight:600;line-height:1.25;}
+.rscore{font-family:'IBM Plex Mono',monospace;font-size:15px;font-weight:600;color:var(--signal);}
+.rmeta{
+  font-family:'IBM Plex Mono',monospace;
+  font-size:11px;color:var(--text-dim);margin-top:3px;
+}
+.rprice{
+  font-family:'IBM Plex Mono',monospace;
+  font-size:11px;color:var(--good);margin-top:2px;opacity:.85;
+}
+.pricebig{
+  font-family:'IBM Plex Mono',monospace;font-size:20px;color:var(--good);font-weight:600;
+}
+.bqrow{display:flex;align-items:center;gap:10px;margin-bottom:9px;}
+.bqdots{display:flex;gap:3px;flex-shrink:0;}
+.bqdot{width:9px;height:9px;border-radius:50%;background:var(--line);}
+.bqdot.on{background:var(--good);}
+.bqname{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--good);}
+.gauge{height:2px;background:var(--line);margin-top:9px;border-radius:2px;overflow:hidden;}
+.gauge span{display:block;height:100%;background:var(--signal-dim);}
+
+.empty{padding:48px 16px;text-align:center;color:var(--text-dim);font-size:14px;}
+.empty b{display:block;color:var(--text);font-size:16px;margin-bottom:6px;}
+
+/* ---- detail ---- */
+#scrim{
+  display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:40;
+}
+#scrim.open{display:block;}
+#detail{
+  position:fixed;left:0;right:0;bottom:0;z-index:50;
+  max-height:88vh;overflow-y:auto;
+  background:var(--surface);
+  border-top:2px solid var(--signal);
+  border-radius:12px 12px 0 0;
+  transform:translateY(100%);
+  transition:transform .22s ease;
+  padding-bottom:calc(28px + env(safe-area-inset-bottom));
+}
+#detail.open{transform:translateY(0);}
+@media (prefers-reduced-motion:reduce){#detail{transition:none;}}
+.dhead{
+  position:sticky;top:0;background:var(--surface);
+  padding:18px 18px 14px;border-bottom:1px solid var(--line);
+}
+.dtop{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;}
+.dname{font-family:'Archivo Narrow',sans-serif;font-weight:700;font-size:24px;line-height:1.1;margin:0;}
+.dparent{font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--text-dim);margin-top:5px;}
+.dscorebox{text-align:right;flex-shrink:0;}
+.dscore{font-family:'IBM Plex Mono',monospace;font-size:26px;font-weight:600;color:var(--signal);line-height:1;}
+.dscorelbl{font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--text-dim);letter-spacing:.08em;margin-top:3px;}
+#closeBtn{
+  display:block;width:100%;margin-top:14px;
+  background:transparent;border:1px solid var(--line);border-radius:3px;color:var(--text-dim);
+  font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.1em;text-transform:uppercase;
+  padding:10px;cursor:pointer;
+}
+#closeBtn:hover{color:var(--text);border-color:var(--text-dim);}
+.dbody{padding:18px;}
+.dsec{margin-bottom:20px;}
+.dsec:last-child{margin-bottom:0;}
+.dsech{
+  font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--text-dim);
+  padding-bottom:7px;border-bottom:1px solid var(--line);margin-bottom:10px;
+}
+.dtext{font-size:14.5px;line-height:1.5;margin:0;}
+.taglist{display:flex;flex-wrap:wrap;gap:6px;}
+.tag{
+  font-family:'IBM Plex Mono',monospace;font-size:11px;
+  background:var(--surface-2);border:1px solid var(--line);border-radius:3px;
+  padding:5px 9px;color:var(--text);
+}
+.tag.on{border-color:var(--good);color:var(--good);}
+.tag.off{color:var(--text-dim);opacity:.5;}
+.rankline{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--text-dim);}
+.rankline b{color:var(--text);}
+.editorial{
+  font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--text-dim);
+  margin-top:5px;font-style:normal;letter-spacing:.02em;
+}
+footer{
+  padding:24px 16px 40px;border-top:1px solid var(--line);
+  font-family:'IBM Plex Mono',monospace;font-size:10.5px;line-height:1.6;color:var(--text-dim);
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <div class="masthead">
+    <div>
+      <h1>Chain Index</h1>
+      <div class="src">J.D. Power 2026 · 102 brands · US &amp; Canada</div>
+    </div>
+    <div class="count" id="count">104 shown</div>
+  </div>
+  <div class="tabs">
+    <button class="tab on" id="tabBrowse">Browse</button>
+    <button class="tab" id="tabPick">What should I book?</button>
+  </div>
+  <div class="searchrow" id="searchrow">
+    <input id="search" type="search" placeholder="Search brand or parent company" autocomplete="off">
+    <button id="filterToggle">Filters</button>
+  </div>
+</header>
+
+<div id="filters">
+  <div class="fgroup">
+    <div class="flabel">Tier</div>
+    <div class="chips" id="tierChips"></div>
+  </div>
+  <div class="fgroup">
+    <div class="flabel">Parent company</div>
+    <div class="chips" id="parentChips"></div>
+  </div>
+  <div class="fgroup">
+    <div class="flabel">Footprint — how likely you'll find one</div>
+    <div class="chips" id="footChips"></div>
+    <div class="caveat">Editorial estimate, not survey data. Reflects rough US presence by brand, not verified property counts — treat as a rule of thumb, not a guarantee.</div>
+  </div>
+  <div class="fgroup">
+    <div class="flabel">Amenity — must have all selected</div>
+    <div class="chips" id="amenChips"></div>
+  </div>
+  <div class="fgroup">
+    <div class="flabel">Breakfast quality — minimum</div>
+    <div class="chips" id="bqChips"></div>
+    <div class="caveat">Editorial judgment, not survey data. Filters to brands offering free breakfast at or above the selected level.</div>
+  </div>
+  <div class="fgroup">
+    <div class="flabel">Best for</div>
+    <div class="chips" id="useChips"></div>
+  </div>
+  <div class="fgroup">
+    <div class="flabel">Sort</div>
+    <div class="chips" id="sortChips"></div>
+  </div>
+  <button id="clearAll">Clear all filters</button>
+</div>
+
+<div id="pick">
+  <div class="pq">
+    <div class="flabel">Trip type</div>
+    <div class="chips" id="pTrip"></div>
+  </div>
+  <div class="pq">
+    <div class="flabel">Destination</div>
+    <div class="chips" id="pDest"></div>
+    <div class="caveat">Rural shifts the ranking toward brands you'll actually find; city shifts it toward the best-scoring option.</div>
+  </div>
+  <div class="pq">
+    <div class="flabel">Length of stay</div>
+    <div class="chips" id="pNights"></div>
+  </div>
+  <div class="pq">
+    <div class="flabel">Budget ceiling</div>
+    <div class="chips" id="pBudget"></div>
+  </div>
+  <div class="pq">
+    <div class="flabel">Must-have amenities — optional</div>
+    <div class="chips" id="pAmen"></div>
+  </div>
+  <button id="runPick">Get picks</button>
+  <div id="pickNote">Answer trip type, destination, stay length and budget to run.</div>
+  <div id="results"></div>
+</div>
+
+<div id="list"></div>
+
+<footer>
+  Scores: J.D. Power 2026 North America Hotel Guest Satisfaction Index Study (104 brands benchmarked, 102 published in the ranked results; 44,787 stays surveyed May 2025–May 2026; 1,000-point scale across check-in/out, connectivity, facilities, food &amp; beverage, guest rooms, staff service, and value).<br><br>
+  Typical rate ranges are tier-level, derived from STR/CoStar chain-scale benchmarks (US ADR ~$161 early 2026) — not brand-specific, and market and date swing rate far more than brand does. Breakfast quality, amenities, footprint, per-diem notes and best-for tags are editorial — assembled from brand standards, not from J.D. Power. Amenities vary by property; confirm before booking. Rankings shift annually.
+</footer>
+
+</div>
+
+<div id="scrim"></div>
+<div id="detail" role="dialog" aria-modal="true" aria-labelledby="dNameEl">
+  <div class="dhead">
+    <div class="dtop">
+      <div>
+        <h2 class="dname" id="dNameEl"></h2>
+        <div class="dparent" id="dParentEl"></div>
+      </div>
+      <div class="dscorebox">
+        <div class="dscore" id="dScoreEl"></div>
+        <div class="dscorelbl">/ 1000</div>
+      </div>
+    </div>
+    <button id="closeBtn">Close</button>
+  </div>
+  <div class="dbody" id="dBodyEl"></div>
+</div>
+
+<script>
+const A = {BF:'Free breakfast',GYM:'Fitness center',POOL:'Pool',KIT:'In-room kitchen',PET:'Pet-friendly',REST:'On-site restaurant'};
+const U = {PD:'Per diem',LONG:'Long stay',ROAD:'Road trip',FIELD:'Field work',BIZ:'Business',SPECIAL:'Special occasion'};
+
+const DATA = [
+// LUXURY
+{n:"The Ritz-Carlton",p:"Marriott",t:"Luxury",s:785,r:1,rt:12,a:[A.GYM,A.POOL,A.PET,A.REST],fp:"Limited — major metros and resort destinations only.",u:[U.SPECIAL],note:"Top-scoring brand in the entire study, second year running, and widened its lead. Full-service everything."},
+{n:"Waldorf Astoria",p:"Hilton",t:"Luxury",s:776,r:2,rt:12,a:[A.GYM,A.POOL,A.PET,A.REST],fp:"Very limited — flagship properties in top-tier cities.",u:[U.SPECIAL],note:"Improved year over year while holding second. Hilton's luxury flag."},
+{n:"Four Seasons",p:"Four Seasons",t:"Luxury",s:767,r:3,rt:12,a:[A.GYM,A.POOL,A.PET,A.REST],fp:"Limited — major cities and resorts.",u:[U.SPECIAL],note:"Jumped from a tie for 5th last year to 3rd. Independent of the big parent groups."},
+{n:"The Luxury Collection",p:"Marriott",t:"Luxury",s:758,r:4,rt:12,a:[A.GYM,A.POOL,A.REST],fp:"Limited — individually distinctive properties, often historic.",u:[U.SPECIAL],note:"Slipped to 4th despite a slightly higher score. Each property is its own character rather than a standard format."},
+{n:"Grand Hyatt",p:"Hyatt",t:"Luxury",s:741,r:5,rt:12,a:[A.GYM,A.POOL,A.REST],fp:"Limited — large-format urban and resort properties.",u:[U.SPECIAL,U.BIZ],note:"Tied for 5th. Large convention-capable properties."},
+{n:"InterContinental Hotels & Resorts",p:"IHG",t:"Luxury",s:740,r:6,rt:12,a:[A.GYM,A.POOL,A.REST],fp:"Limited — major international gateway cities.",u:[U.SPECIAL,U.BIZ],note:"IHG's luxury flag."},
+{n:"Conrad Hotels & Resorts",p:"Hilton",t:"Luxury",s:738,r:7,rt:12,a:[A.GYM,A.POOL,A.REST],fp:"Very limited in the US.",u:[U.SPECIAL],note:"Hilton's second luxury brand, below Waldorf Astoria."},
+{n:"JW Marriott",p:"Marriott",t:"Luxury",s:734,r:8,rt:12,a:[A.GYM,A.POOL,A.REST],fp:"Limited — major metros.",u:[U.SPECIAL,U.BIZ],note:"Marriott's luxury tier below Ritz-Carlton."},
+{n:"W Hotels",p:"Marriott",t:"Luxury",s:732,r:9,rt:12,a:[A.GYM,A.POOL,A.PET,A.REST],fp:"Limited — design-forward urban properties.",u:[U.SPECIAL],note:"Style-driven format; polarizing by design."},
+{n:"Loews Hotels",p:"Loews",t:"Luxury",s:713,r:10,rt:12,a:[A.GYM,A.POOL,A.PET,A.REST],fp:"Very limited — roughly two dozen US properties.",u:[U.SPECIAL],note:"Family-owned; notably pet-friendly for the luxury tier."},
+{n:"Destination by Hyatt",p:"Hyatt",t:"Luxury",s:712,r:11,rt:12,a:[A.GYM,A.REST],fp:"Very limited — independent-feeling properties.",u:[U.SPECIAL],note:"Tied for 11th. Collection brand — properties keep their own identity."},
+{n:"Fairmont",p:"Accor",t:"Luxury",s:712,r:11,rt:12,a:[A.GYM,A.POOL,A.PET,A.REST],fp:"Very limited — landmark historic hotels, strong in Canada.",u:[U.SPECIAL],note:"Tied for 11th. Grand historic properties, notably the Canadian railway hotels."},
+
+// UPPER UPSCALE
+{n:"Kimpton",p:"IHG",t:"Upper Upscale",s:738,r:1,rt:20,a:[A.GYM,A.PET,A.REST],fp:"Limited — urban boutique properties.",u:[U.SPECIAL,U.BIZ],note:"The big story of 2026 — leapt from 17th to 1st, a 54-point gain, the largest improvement anywhere in the study. Notably pet-friendly with no fees at most properties."},
+{n:"Omni Hotels & Resorts",p:"Omni",t:"Upper Upscale",s:733,r:2,rt:20,a:[A.GYM,A.POOL,A.REST],fp:"Moderate — US cities and resorts.",u:[U.BIZ,U.SPECIAL],note:"Last year's segment winner, displaced by Kimpton."},
+{n:"Hard Rock Hotels",p:"Hard Rock",t:"Upper Upscale",s:730,r:3,rt:20,a:[A.GYM,A.POOL,A.REST],fp:"Limited — destination markets.",u:[U.SPECIAL],note:"Slipped one place but its score still improved."},
+{n:"Hilton Hotels & Resorts",p:"Hilton",t:"Upper Upscale",s:728,r:4,rt:20,a:[A.GYM,A.POOL,A.REST],fp:"Wide — the flagship Hilton, present in most mid-size and larger cities.",u:[U.BIZ],note:"The core Hilton brand; full-service with restaurants and meeting space."},
+{n:"Hyatt Regency",p:"Hyatt",t:"Upper Upscale",s:718,r:5,rt:20,a:[A.GYM,A.POOL,A.REST],fp:"Moderate — convention-oriented properties.",u:[U.BIZ],note:"Tied for 5th. Large-format conference hotels."},
+{n:"Margaritaville Hotels & Resorts",p:"Margaritaville",t:"Upper Upscale",s:718,r:5,rt:20,a:[A.GYM,A.POOL,A.REST],fp:"Very limited — leisure destinations.",u:[U.SPECIAL],note:"Tied for 5th. Themed leisure format."},
+{n:"Le Méridien",p:"Marriott",t:"Upper Upscale",s:716,r:7,rt:20,a:[A.GYM,A.REST],fp:"Very limited in the US.",u:[U.BIZ,U.SPECIAL],note:"European-influenced design format."},
+{n:"Curio Collection by Hilton",p:"Hilton",t:"Upper Upscale",s:715,r:8,rt:20,a:[A.GYM,A.REST],fp:"Moderate — collection of independent properties.",u:[U.SPECIAL],note:"Collection brand: each property keeps its own name and character under Hilton standards."},
+{n:"Embassy Suites by Hilton",p:"Hilton",t:"Upper Upscale",s:713,r:9,rt:20,a:[A.BF,A.GYM,A.POOL,A.REST],fp:"Moderate — solid presence in secondary cities.",u:[U.BIZ,U.LONG],note:"Tied for 9th. All-suite format with free cooked-to-order breakfast and evening reception — strong value for the tier."},
+{n:"Marriott",p:"Marriott",t:"Upper Upscale",s:713,r:9,rt:20,a:[A.GYM,A.POOL,A.REST],fp:"Wide — the flagship Marriott brand.",u:[U.BIZ],note:"Tied for 9th. The core full-service Marriott."},
+{n:"Renaissance Hotels",p:"Marriott",t:"Upper Upscale",s:711,r:11,rt:20,a:[A.GYM,A.REST],fp:"Moderate.",u:[U.BIZ,U.SPECIAL],note:"Tied for 11th. Design-leaning alternative to core Marriott."},
+{n:"Tapestry Collection by Hilton",p:"Hilton",t:"Upper Upscale",s:711,r:11,rt:20,a:[A.GYM,A.REST],fp:"Limited — collection of independents.",u:[U.SPECIAL],note:"Tied for 11th. Hilton's more accessible collection brand."},
+{n:"Hyatt Centric",p:"Hyatt",t:"Upper Upscale",s:709,r:13,rt:20,a:[A.GYM,A.REST],fp:"Limited — downtown-focused.",u:[U.BIZ,U.SPECIAL],note:"Sited deliberately in walkable city centers."},
+{n:"Royal Sonesta",p:"Sonesta",t:"Upper Upscale",s:706,r:14,rt:20,a:[A.GYM,A.REST],fp:"Limited.",u:[U.BIZ],note:"Sonesta's upper-tier flag."},
+{n:"Hotel Indigo",p:"IHG",t:"Upper Upscale",s:705,r:15,rt:20,a:[A.GYM,A.PET,A.REST],fp:"Limited — neighborhood-themed boutiques.",u:[U.SPECIAL],note:"Each property designed around its local neighborhood."},
+{n:"Westin Hotels & Resorts",p:"Marriott",t:"Upper Upscale",s:703,r:16,rt:20,a:[A.GYM,A.POOL,A.REST],fp:"Moderate.",u:[U.BIZ],note:"Wellness-positioned; the Heavenly Bed is the brand signature."},
+{n:"Sheraton",p:"Marriott",t:"Upper Upscale",s:696,r:17,rt:20,a:[A.GYM,A.POOL,A.REST],fp:"Wide for the tier — long-established, many secondary markets.",u:[U.BIZ],note:"Mid-pack. Wide footprint but variable property age; mid-renovation across the portfolio."},
+{n:"Canopy by Hilton",p:"Hilton",t:"Upper Upscale",s:695,r:18,rt:20,a:[A.BF,A.GYM,A.PET],fp:"Limited — newer, urban.",u:[U.SPECIAL,U.BIZ],note:"Newer lifestyle brand; free breakfast unusual at this tier."},
+{n:"Autograph Collection Hotels",p:"Marriott",t:"Upper Upscale",s:693,r:19,rt:20,a:[A.GYM,A.REST],fp:"Moderate — collection of independents.",u:[U.SPECIAL],note:"Highly variable by design — the collection format means less predictability than a standardized brand."},
+{n:"Graduate by Hilton",p:"Hilton",t:"Upper Upscale",s:676,r:20,rt:20,a:[A.GYM,A.REST],fp:"Limited — college towns.",u:[U.SPECIAL],note:"Last in segment. Sited in university towns with campus-themed design."},
+
+// UPSCALE
+{n:"Drury Hotels",p:"Drury (independent)",t:"Upscale",s:761,r:1,rt:18,a:[A.BF,A.GYM,A.POOL,A.PET],fp:"Moderate — family-owned, concentrated in the Midwest, South and lower Mountain West.",u:[U.ROAD,U.BIZ,U.PD],note:"Wins its segment for the second year by more than 60 points over segment average — one of the widest margins in the entire study. Free hot breakfast plus free evening food and drinks. Family-owned rather than franchised, which is likely why consistency is so high. Worth going out of your way for if one is on your route."},
+{n:"Hilton Garden Inn",p:"Hilton",t:"Upscale",s:715,r:2,rt:18,a:[A.GYM,A.POOL,A.REST],fp:"Wide — strong presence in secondary and smaller markets.",u:[U.BIZ,U.PD],note:"Climbed from 4th to 2nd. Reliable business-travel format with on-site restaurant; breakfast usually costs extra."},
+{n:"Hyatt Place",p:"Hyatt",t:"Upscale",s:706,r:3,rt:18,a:[A.BF,A.GYM,A.POOL],fp:"Moderate — good airport and suburban coverage.",u:[U.BIZ,U.PD],note:"Big jump from 13th to 3rd. Free breakfast included, which is unusual in this tier."},
+{n:"AC Hotels by Marriott",p:"Marriott",t:"Upscale",s:705,r:4,rt:18,a:[A.GYM,A.REST],fp:"Limited — urban, newer builds.",u:[U.BIZ],note:"European-minimalist format; smaller rooms by design."},
+{n:"Cambria Hotels",p:"Choice",t:"Upscale",s:704,r:5,rt:18,a:[A.GYM,A.POOL,A.REST],fp:"Limited but growing.",u:[U.BIZ],note:"Choice's push upmarket; the strongest-scoring Choice brand by a wide margin."},
+{n:"Delta Hotels",p:"Marriott",t:"Upscale",s:702,r:6,rt:18,a:[A.GYM,A.POOL,A.REST],fp:"Limited in the US, stronger in Canada.",u:[U.BIZ],note:"Originally a Canadian chain; simplified full-service format."},
+{n:"DoubleTree by Hilton",p:"Hilton",t:"Upscale",s:696,r:7,rt:18,a:[A.GYM,A.POOL,A.PET,A.REST],fp:"Wide — one of the broader upscale footprints.",u:[U.BIZ],note:"Highly variable property to property — includes both new builds and aging conversions. The warm cookie at check-in is the one true constant."},
+{n:"Aloft Hotels",p:"Marriott",t:"Upscale",s:690,r:8,rt:18,a:[A.GYM,A.POOL,A.PET],fp:"Limited — urban and airport.",u:[U.BIZ],note:"Loft-style rooms, bar-forward lobby."},
+{n:"Courtyard by Marriott",p:"Marriott",t:"Upscale",s:685,r:9,rt:18,a:[A.GYM,A.POOL,A.REST],fp:"Very wide — one of the largest upscale footprints in the US.",u:[U.BIZ,U.PD],note:"Tied for 9th. Middling score but exceptional availability — often the default business-travel option in a market with few choices."},
+{n:"Crowne Plaza",p:"IHG",t:"Upscale",s:685,r:9,rt:18,a:[A.GYM,A.POOL,A.REST],fp:"Moderate.",u:[U.BIZ],note:"Tied for 9th. Meeting-oriented full-service."},
+{n:"Ascend Hotel Collection",p:"Choice",t:"Upscale",s:684,r:11,rt:18,a:[A.GYM],fp:"Moderate — collection of independents.",u:[U.SPECIAL],note:"Choice's collection brand; character varies widely since properties keep their own identity."},
+{n:"Four Points by Sheraton",p:"Marriott",t:"Upscale",s:682,r:12,rt:18,a:[A.GYM,A.POOL,A.REST],fp:"Moderate — often airport-adjacent.",u:[U.BIZ],note:"Simplified Sheraton format."},
+{n:"SpringHill Suites by Marriott",p:"Marriott",t:"Upscale",s:680,r:13,rt:18,a:[A.BF,A.GYM,A.POOL],fp:"Moderate to wide.",u:[U.BIZ,U.PD],note:"All-suite with free breakfast; more room than Courtyard at a similar rate."},
+{n:"Element",p:"Marriott",t:"Upscale",s:678,r:14,rt:18,a:[A.BF,A.GYM,A.KIT,A.PET],fp:"Limited.",u:[U.LONG,U.BIZ],note:"Extended-stay-leaning with full in-room kitchens; eco-positioned."},
+{n:"Radisson",p:"Choice",t:"Upscale",s:677,r:15,rt:18,a:[A.GYM,A.POOL,A.REST],fp:"Moderate — shrinking US presence.",u:[U.BIZ],note:"Acquired by Choice; portfolio in transition."},
+{n:"Wyndham Hotels",p:"Wyndham",t:"Upscale",s:672,r:16,rt:18,a:[A.GYM,A.POOL,A.REST],fp:"Moderate.",u:[U.BIZ],note:"Wyndham's flagship-name brand, though most Wyndham volume sits in lower tiers."},
+{n:"Sonesta Hotels & Resorts",p:"Sonesta",t:"Upscale",s:664,r:17,rt:18,a:[A.GYM,A.POOL,A.REST],fp:"Limited.",u:[U.BIZ],note:"Grew fast via acquisition; consistency still catching up."},
+{n:"Sonesta Select",p:"Sonesta",t:"Upscale",s:612,r:18,rt:18,a:[A.GYM,A.POOL],fp:"Limited.",u:[U.BIZ],note:"Last in segment by a 52-point gap — the weakest upscale performer in the study. Mostly converted former Courtyard properties."},
+
+// UPSCALE EXTENDED STAY
+{n:"Hyatt House",p:"Hyatt",t:"Upscale Extended Stay",s:728,r:1,rt:4,a:[A.BF,A.GYM,A.POOL,A.KIT,A.PET],fp:"Limited — suburban and airport markets.",u:[U.LONG,U.BIZ],note:"Five consecutive segment wins, one of the longest streaks in the study. Full kitchens, free hot breakfast. The strongest extended-stay option at any price if one is available."},
+{n:"Homewood Suites by Hilton",p:"Hilton",t:"Upscale Extended Stay",s:698,r:2,rt:4,a:[A.BF,A.GYM,A.POOL,A.KIT,A.PET],fp:"Moderate to wide — good secondary-market coverage.",u:[U.LONG,U.BIZ,U.FIELD],note:"Full kitchens, free breakfast, evening social. Wider availability than Hyatt House, which often makes it the practical pick."},
+{n:"Staybridge Suites",p:"IHG",t:"Upscale Extended Stay",s:690,r:3,rt:4,a:[A.BF,A.GYM,A.POOL,A.KIT,A.PET],fp:"Moderate.",u:[U.LONG,U.FIELD],note:"Full kitchens; IHG's upscale extended-stay flag."},
+{n:"Residence Inn",p:"Marriott",t:"Upscale Extended Stay",s:687,r:4,rt:4,a:[A.BF,A.GYM,A.POOL,A.KIT,A.PET],fp:"Wide — the largest upscale extended-stay footprint.",u:[U.LONG,U.BIZ,U.FIELD],note:"Last in a strong four-brand segment, but by far the most available. For a long field assignment, availability may matter more than the 41-point gap to Hyatt House."},
+
+// UPPER MIDSCALE
+{n:"Hampton by Hilton",p:"Hilton",t:"Upper Midscale",s:704,r:1,rt:12,a:[A.BF,A.GYM,A.POOL],fp:"Very wide — 2,500+ properties, the broadest reach in the tier including small and rural markets.",u:[U.PD,U.ROAD,U.BIZ,U.FIELD],note:"Segment winner two years running, up 10 points. The combination of top score and widest footprint makes this the strongest default for per-diem travel. Free hot breakfast standard; most locations do not accept pets."},
+{n:"Fairfield by Marriott",p:"Marriott",t:"Upper Midscale",s:685,r:2,rt:12,a:[A.BF,A.GYM,A.POOL],fp:"Wide — 1,100+ properties.",u:[U.PD,U.ROAD,U.BIZ,U.FIELD],note:"Improved again this year. Ergonomic desk and chair are brand standard, which makes it a good pick when you'll actually work in the room."},
+{n:"Holiday Inn Express",p:"IHG",t:"Upper Midscale",s:680,r:3,rt:12,a:[A.BF,A.GYM,A.POOL],fp:"Very wide — comparable to Hampton, strong in small towns and along interstates.",u:[U.PD,U.ROAD,U.FIELD],note:"The most reliably present option on rural routes alongside Hampton. Simple, predictable format."},
+{n:"Holiday Inn",p:"IHG",t:"Upper Midscale",s:678,r:4,rt:12,a:[A.GYM,A.POOL,A.PET,A.REST],fp:"Wide.",u:[U.ROAD,U.BIZ],note:"A step up from Express — many have restaurants and bars, but breakfast usually costs extra."},
+{n:"Best Western Plus",p:"Best Western",t:"Upper Midscale",s:676,r:5,rt:12,a:[A.BF,A.GYM,A.POOL,A.PET],fp:"Wide — notably strong in small towns the major chains skip.",u:[U.PD,U.ROAD,U.FIELD],note:"Individually owned properties under brand standards, so more variation than Hampton — but often the only decent option in a remote market. Generally pet-friendly."},
+{n:"Wyndham Garden",p:"Wyndham",t:"Upper Midscale",s:675,r:6,rt:12,a:[A.BF,A.GYM,A.POOL,A.PET],fp:"Limited — don't count on finding one.",u:[U.ROAD],note:"Scores well but the small footprint limits its usefulness as a default."},
+{n:"Trademark Collection by Wyndham",p:"Wyndham",t:"Upper Midscale",s:659,r:7,rt:12,a:[A.BF,A.GYM,A.PET],fp:"Limited — collection of independents.",u:[U.ROAD],note:"Collection brand; expect property-to-property variation."},
+{n:"Comfort Suites",p:"Choice",t:"Upper Midscale",s:653,r:8,rt:12,a:[A.BF,A.GYM,A.POOL,A.PET],fp:"Moderate to wide.",u:[U.PD,U.ROAD],note:"All-suite version of Comfort Inn; more space, similar consistency issues."},
+{n:"Country Inn & Suites by Radisson",p:"Choice",t:"Upper Midscale",s:647,r:9,rt:12,a:[A.BF,A.GYM,A.POOL,A.PET],fp:"Moderate.",u:[U.ROAD],note:"Reviews run notably mixed — property age varies a lot across the portfolio."},
+{n:"La Quinta",p:"Wyndham",t:"Upper Midscale",s:641,r:10,rt:12,a:[A.BF,A.GYM,A.POOL,A.PET],fp:"Wide — strong in the Southwest and Texas.",u:[U.ROAD,U.PD],note:"One of the most reliably pet-friendly chains at this tier, usually with no pet fee. Score is below tier average."},
+{n:"Comfort Inn",p:"Choice",t:"Upper Midscale",s:640,r:11,rt:12,a:[A.BF,A.GYM,A.POOL,A.PET],fp:"Very wide — one of the largest footprints in the US.",u:[U.ROAD,U.PD],note:"Huge availability but well below tier average on satisfaction. Property condition is the usual complaint — check recent reviews for the specific location rather than trusting the brand."},
+{n:"Clarion",p:"Choice",t:"Upper Midscale",s:627,r:12,rt:12,a:[A.BF,A.GYM,A.POOL,A.PET,A.REST],fp:"Limited and shrinking.",u:[U.ROAD],note:"Last in segment. Aging portfolio."},
+
+// UPPER MIDSCALE / MIDSCALE EXTENDED STAY
+{n:"Home2 Suites by Hilton",p:"Hilton",t:"Upper Midscale/Midscale Extended Stay",s:700,r:1,rt:9,a:[A.BF,A.GYM,A.KIT,A.PET],fp:"Moderate to wide — newer brand, expanding fast.",u:[U.LONG,U.FIELD,U.PD],note:"Four consecutive segment wins. In-room kitchenette, free breakfast, laundry on site, pet-friendly. The best per-diem-compatible option for multi-night field assignments."},
+{n:"Candlewood Suites",p:"IHG",t:"Upper Midscale/Midscale Extended Stay",s:690,r:2,rt:9,a:[A.GYM,A.KIT,A.PET],fp:"Moderate — often in industrial and secondary markets, which suits field work.",u:[U.LONG,U.FIELD,U.PD],note:"Full kitchens and a free on-site guest laundry. No breakfast — the trade is a proper kitchen instead. Often sited near work sites rather than downtowns."},
+{n:"TownePlace Suites",p:"Marriott",t:"Upper Midscale/Midscale Extended Stay",s:668,r:3,rt:9,a:[A.BF,A.GYM,A.POOL,A.KIT,A.PET],fp:"Moderate to wide.",u:[U.LONG,U.FIELD,U.PD],note:"Marriott's midscale extended-stay flag. Full kitchens, free breakfast."},
+{n:"Extended Stay America Premier Suites",p:"ESA",t:"Upper Midscale/Midscale Extended Stay",s:650,r:4,rt:9,a:[A.KIT,A.PET],fp:"Moderate.",u:[U.LONG,U.PD],note:"The upper end of the ESA portfolio. Kitchens standard; amenities otherwise thin."},
+{n:"Sonesta ES Suites",p:"Sonesta",t:"Upper Midscale/Midscale Extended Stay",s:648,r:5,rt:9,a:[A.BF,A.GYM,A.KIT,A.PET],fp:"Limited.",u:[U.LONG],note:"Mostly converted properties; consistency varies."},
+{n:"Hawthorn Extended Stay",p:"Wyndham",t:"Upper Midscale/Midscale Extended Stay",s:624,r:6,rt:9,a:[A.BF,A.KIT,A.PET],fp:"Limited.",u:[U.LONG],note:"Below segment average."},
+{n:"MainStay Suites",p:"Choice",t:"Upper Midscale/Midscale Extended Stay",s:614,r:7,rt:9,a:[A.BF,A.KIT,A.PET],fp:"Limited.",u:[U.LONG],note:"Choice's extended-stay entry; scores near the bottom of the segment."},
+{n:"Sonesta Simply Suites",p:"Sonesta",t:"Upper Midscale/Midscale Extended Stay",s:612,r:8,rt:9,a:[A.KIT,A.PET],fp:"Limited.",u:[U.LONG],note:"Budget end of Sonesta's extended-stay line."},
+{n:"Extended Stay America",p:"ESA",t:"Upper Midscale/Midscale Extended Stay",s:575,r:9,rt:9,a:[A.KIT,A.PET],fp:"Wide.",u:[U.LONG],note:"Last in segment by 37 points, and one of the lowest scores in the study outside the economy tiers. Wide availability doesn't offset the consistency problem — verify the specific property carefully."},
+
+// MIDSCALE
+{n:"Tru by Hilton",p:"Hilton",t:"Midscale",s:695,r:1,rt:9,a:[A.BF,A.GYM],fp:"Moderate — newer brand, still expanding.",u:[U.PD,U.ROAD],note:"Four consecutive segment wins and 30 points clear of second place. Newer builds mean fewer condition problems. Rooms are small and simplified by design — no pool at most locations."},
+{n:"Wingate by Wyndham",p:"Wyndham",t:"Midscale",s:665,r:2,rt:9,a:[A.BF,A.GYM,A.POOL],fp:"Moderate.",u:[U.PD,U.ROAD,U.BIZ],note:"The most business-oriented brand in Wyndham's midscale range."},
+{n:"Spark by Hilton",p:"Hilton",t:"Midscale",s:662,r:3,rt:9,a:[A.BF],fp:"Limited — very new brand, mostly conversions.",u:[U.PD,U.ROAD],note:"Hilton's newest and cheapest flag, launched as a conversion brand. Scoring well early, but the portfolio is young and uneven."},
+{n:"Best Western",p:"Best Western",t:"Midscale",s:658,r:4,rt:9,a:[A.BF,A.GYM,A.POOL,A.PET],fp:"Wide — exceptional small-town and rural coverage.",u:[U.ROAD,U.FIELD,U.PD],note:"The base Best Western flag, below Best Western Plus. Independently owned properties vary considerably, but the rural footprint is genuinely hard to beat — often the only branded option in a small town."},
+{n:"AmericInn",p:"Wyndham",t:"Midscale",s:632,r:5,rt:9,a:[A.BF,A.POOL,A.PET],fp:"Limited — concentrated in the Upper Midwest.",u:[U.ROAD],note:"Regional brand; strong in Minnesota, Wisconsin and the Dakotas."},
+{n:"Baymont",p:"Wyndham",t:"Midscale",s:617,r:6,rt:9,a:[A.BF,A.POOL,A.PET],fp:"Moderate.",u:[U.ROAD],note:"Below segment average; property condition varies widely."},
+{n:"Sleep Inn",p:"Choice",t:"Midscale",s:611,r:7,rt:9,a:[A.BF,A.GYM,A.POOL,A.PET],fp:"Moderate.",u:[U.ROAD],note:"Choice's simplified midscale format."},
+{n:"Ramada by Wyndham",p:"Wyndham",t:"Midscale",s:594,r:8,rt:9,a:[A.BF,A.POOL,A.PET,A.REST],fp:"Moderate and shrinking.",u:[U.ROAD],note:"Aging portfolio; near the bottom of the segment."},
+{n:"Quality Inn",p:"Choice",t:"Midscale",s:590,r:9,rt:9,a:[A.BF,A.POOL,A.PET],fp:"Very wide — one of the largest US footprints.",u:[U.ROAD],note:"Last in segment. Enormous availability paired with the weakest midscale score — the clearest case in the study where footprint and quality diverge. Check the specific property, never the brand."},
+
+// ECONOMY
+{n:"Microtel by Wyndham",p:"Wyndham",t:"Economy",s:637,r:1,rt:13,a:[A.BF,A.GYM,A.PET],fp:"Moderate.",u:[U.ROAD,U.PD],note:"Four consecutive segment wins and 16 points clear of second. All new-construction with a standardized small-room design, which is why consistency beats the rest of the tier. Scores above several midscale brands."},
+{n:"Americas Best Value Inn",p:"Sonesta",t:"Economy",s:621,r:2,rt:13,a:[A.BF,A.PET],fp:"Moderate.",u:[U.ROAD],note:"Second in segment; converted independent motels."},
+{n:"SureStay by Best Western",p:"Best Western",t:"Economy",s:605,r:3,rt:13,a:[A.BF,A.PET],fp:"Limited.",u:[U.ROAD],note:"Best Western's economy conversion brand."},
+{n:"Days Inn",p:"Wyndham",t:"Economy",s:594,r:4,rt:13,a:[A.BF,A.POOL,A.PET],fp:"Very wide — heavy interstate presence.",u:[U.ROAD],note:"Ubiquitous along highways; condition varies enormously property to property."},
+{n:"Howard Johnson",p:"Wyndham",t:"Economy",s:590,r:5,rt:13,a:[A.BF,A.POOL,A.PET],fp:"Limited and shrinking.",u:[U.ROAD],note:"Much-reduced legacy brand."},
+{n:"Travelodge",p:"Wyndham",t:"Economy",s:552,r:6,rt:13,a:[A.PET],fp:"Moderate.",u:[U.ROAD],note:"Bottom third of the tier."},
+{n:"Super 8",p:"Wyndham",t:"Economy",s:550,r:7,rt:13,a:[A.BF,A.PET],fp:"Very wide — one of the widest US footprints, strong rural presence.",u:[U.ROAD],note:"Available nearly everywhere, including towns with no other option — but among the lowest-scoring branded chains. Treat as a fallback, not a plan."},
+{n:"Red Roof Inn",p:"Red Roof",t:"Economy",s:549,r:8,rt:13,a:[A.PET],fp:"Moderate.",u:[U.ROAD],note:"Consistently pet-friendly with no fee, which is its main draw."},
+{n:"Econo Lodge",p:"Choice",t:"Economy",s:548,r:9,rt:13,a:[A.BF,A.PET],fp:"Moderate.",u:[U.ROAD],note:"Bottom of Choice's ladder."},
+{n:"Motel 6",p:"Motel 6",t:"Economy",s:535,r:10,rt:13,a:[A.PET],fp:"Wide.",u:[U.ROAD],note:"No breakfast, minimal amenities. Reliably pet-friendly at no charge."},
+{n:"Studio 6",p:"Motel 6",t:"Economy",s:528,r:11,rt:13,a:[A.KIT,A.PET],fp:"Limited.",u:[U.LONG],note:"Extended-stay version of Motel 6."},
+{n:"Rodeway Inn",p:"Choice",t:"Economy",s:489,r:12,rt:13,a:[A.PET],fp:"Moderate.",u:[U.ROAD],note:"Second-lowest score in the entire 104-brand study."},
+{n:"OYO",p:"OYO",t:"Economy",s:458,r:13,rt:13,a:[],fp:"Moderate — rapid conversion of independent motels.",u:[],note:"Lowest score of all 104 brands, by 31 points. Franchise conversions with minimal standardization."},
+
+// ECONOMY EXTENDED STAY
+{n:"WoodSpring Suites",p:"Choice",t:"Economy Extended Stay",s:587,r:1,rt:5,a:[A.KIT,A.PET],fp:"Moderate.",u:[U.LONG],note:"Four consecutive segment wins. Kitchens standard, weekly rates; built for stays measured in weeks rather than nights."},
+{n:"Extended Stay America Select Suites",p:"ESA",t:"Economy Extended Stay",s:555,r:2,rt:5,a:[A.KIT,A.PET],fp:"Moderate.",u:[U.LONG],note:"The budget tier of the ESA portfolio."},
+{n:"InTown Suites",p:"InTown",t:"Economy Extended Stay",s:552,r:3,rt:5,a:[A.KIT],fp:"Limited.",u:[U.LONG],note:"Weekly-rate format."},
+{n:"Suburban Studios",p:"Choice",t:"Economy Extended Stay",s:539,r:4,rt:5,a:[A.KIT,A.PET],fp:"Limited.",u:[U.LONG],note:"Choice's budget extended-stay brand."},
+{n:"HomeTowne Studios by Red Roof",p:"Red Roof",t:"Economy Extended Stay",s:535,r:5,rt:5,a:[A.KIT,A.PET],fp:"Limited.",u:[U.LONG],note:"Last in segment."}
+];
+
+const TIER_ORDER = ["Luxury","Upper Upscale","Upscale","Upscale Extended Stay","Upper Midscale","Upper Midscale/Midscale Extended Stay","Midscale","Economy","Economy Extended Stay"];
+const AMENITIES = [A.BF,A.GYM,A.POOL,A.KIT,A.PET,A.REST];
+const USES = [U.PD,U.LONG,U.ROAD,U.FIELD,U.BIZ,U.SPECIAL];
+const PARENTS = [...new Set(DATA.map(d=>d.p))].sort();
+
+// Derive a coarse footprint bin from the editorial footprint text.
+// 4 = very wide, 3 = wide, 2 = moderate, 1 = limited. Estimate, not survey data.
+function footBin(fp){
+  const f=fp.toLowerCase();
+  if(f.startsWith('very wide')) return 5;
+  if(f.startsWith('moderate to wide')) return 4;
+  if(f.startsWith('wide')) return 4;
+  if(f.startsWith('moderate')) return 3;
+  if(f.startsWith('very limited')) return 1;
+  return 2;
+}
+const FOOT_LABEL={5:'Very wide',4:'Wide',3:'Moderate',2:'Limited',1:'Very limited'};
+const FOOT_OPTS=[{v:5,l:'Very wide'},{v:4,l:'Wide'},{v:3,l:'Moderate'},{v:2,l:'Limited'},{v:1,l:'Very limited'}];
+DATA.forEach(d=>{d.f=footBin(d.fp);});
+
+// Typical nightly rate by tier. Chain scale is defined by rate, so tier is the honest unit here —
+// brand-level "typical price" doesn't exist in any real sense. Ranges span secondary market to major metro.
+const TIER_PRICE={
+  "Luxury":"$350–700+",
+  "Upper Upscale":"$200–350",
+  "Upscale":"$150–260",
+  "Upscale Extended Stay":"$150–250",
+  "Upper Midscale":"$110–190",
+  "Upper Midscale/Midscale Extended Stay":"$110–180",
+  "Midscale":"$90–150",
+  "Economy":"$60–110",
+  "Economy Extended Stay":"$50–90"
+};
+
+// Breakfast quality, 1–5. Editorial — J.D. Power scores food and beverage but publishes no
+// breakfast-specific brand sub-score, so this is reputational, not measured.
+const BQ_LABEL={5:"Exceptional",4:"Strong",3:"Standard hot",2:"Light continental",1:"Minimal"};
+const BREAKFAST={
+"Embassy Suites by Hilton":[5,"Cooked-to-order omelet station plus a full buffet, and a free evening reception with drinks. The best free breakfast of any chain in the study."],
+"Drury Hotels":[5,"Hot buffet in the morning plus free hot food and drinks every evening. A genuine reason to pick the brand — it can replace two paid meals a day."],
+"Hampton by Hilton":[4,"The benchmark for the tier. Hot buffet with eggs, sausage, oatmeal and the waffle maker; consistent across properties."],
+"Holiday Inn Express":[4,"Hot buffet built around the cinnamon rolls, which have their own following. Pancake machine at most locations."],
+"Homewood Suites by Hilton":[4,"Full hot buffet plus an evening social with light food several nights a week."],
+"Hyatt House":[4,"Hot buffet with made-to-order omelets at many properties. Among the strongest at any tier."],
+"Hyatt Place":[4,"Hot breakfast included in the rate — unusual for upscale, where breakfast is normally an upcharge."],
+"Staybridge Suites":[4,"Hot buffet, plus a free evening reception at many properties."],
+"Residence Inn":[4,"Hot buffet with eggs, meat and waffles. Reliable across the portfolio."],
+"Home2 Suites by Hilton":[3,"Hot items with a build-your-own angle. Solid but a step below Hampton."],
+"Fairfield by Marriott":[3,"Hot items, waffles, and a decent spread. Competent rather than memorable."],
+"TownePlace Suites":[3,"Hot buffet; adequate for the tier."],
+"SpringHill Suites by Marriott":[3,"Hot buffet, comparable to Fairfield."],
+"Best Western Plus":[3,"Hot breakfast, though quality varies with the individual owner more than at Hilton or Marriott brands."],
+"Best Western":[3,"Hot breakfast at most properties, but the most variable of the major chains — individually owned."],
+"Comfort Suites":[3,"Hot breakfast with waffles. Variable by property."],
+"Comfort Inn":[3,"Hot breakfast on paper; execution is the most common complaint about the brand."],
+"Country Inn & Suites by Radisson":[3,"Hot items plus the cinnamon rolls the brand leans on."],
+"Tru by Hilton":[3,"A build-your-own bar with cereals, yogurts and toppings. Lighter and cheaper than Hampton's — no eggs at most locations."],
+"Wingate by Wyndham":[3,"Hot buffet, better than Wyndham's other midscale flags."],
+"Canopy by Hilton":[3,"Curated, locally-sourced-leaning breakfast. Smaller than a buffet but better quality per item."],
+"La Quinta":[3,"Hot items including waffles; execution varies widely by property."],
+"Element":[3,"Healthier-leaning spread — more yogurt and grains than eggs and sausage."],
+"AmericInn":[3,"Hot breakfast; a strong point for a regional brand."],
+"Sonesta ES Suites":[3,"Hot buffet at most properties."],
+"Sleep Inn":[2,"Mostly continental with a hot item or two."],
+"Clarion":[2,"Continental-plus; aging properties show here."],
+"Baymont":[2,"Light continental with limited hot options."],
+"Ramada by Wyndham":[2,"Varies enormously; often continental only."],
+"Quality Inn":[2,"Advertised as hot but among the most common sources of complaint about the brand."],
+"Microtel by Wyndham":[2,"Continental-plus and grab-and-go. Modest but consistently executed, which suits the brand."],
+"Days Inn":[2,"Basic continental. Coffee, pastries, cereal."],
+"Howard Johnson":[2,"Basic continental."],
+"SureStay by Best Western":[2,"Light continental."],
+"MainStay Suites":[2,"Continental-plus, weekday-only at some properties."],
+"Hawthorn Extended Stay":[2,"Light continental."],
+"Wyndham Garden":[2,"Continental-plus; varies by property."],
+"Trademark Collection by Wyndham":[2,"Varies by property — it's a collection brand, so there's no single standard."],
+"Spark by Hilton":[1,"Grab-and-go by design — coffee, pastries, fruit. Deliberately minimal to hold the rate down."],
+"Super 8":[1,"Coffee and packaged items. Minimal."],
+"Econo Lodge":[1,"Coffee and packaged pastries."],
+"Americas Best Value Inn":[1,"Minimal continental where offered at all."]
+};
+
+const EXTENDED_TIERS=["Upscale Extended Stay","Upper Midscale/Midscale Extended Stay","Economy Extended Stay"];
+// Budget ceilings — each option admits its own tier and everything cheaper.
+const BUDGET_TIERS={
+  economy:["Economy","Economy Extended Stay"],
+  midscale:["Economy","Economy Extended Stay","Midscale","Upper Midscale","Upper Midscale/Midscale Extended Stay"],
+  upscale:["Economy","Economy Extended Stay","Midscale","Upper Midscale","Upper Midscale/Midscale Extended Stay","Upscale","Upscale Extended Stay"],
+  any:TIER_ORDER
+};
+
+const state = {q:"",tiers:new Set(),parents:new Set(),amens:new Set(),uses:new Set(),foots:new Set(),minBq:0,sort:"tier"};
+const pick = {trip:null,dest:null,nights:null,budget:null,amens:new Set()};
+
+function chip(label,active){
+  const b=document.createElement('button');
+  b.className='chip'+(active?' active':'');
+  b.textContent=label;b.type='button';
+  return b;
+}
+function buildChips(containerId,items,setKey,single){
+  const c=document.getElementById(containerId);
+  c.innerHTML='';
+  items.forEach(item=>{
+    const val=typeof item==='string'?item:item.v;
+    const lbl=typeof item==='string'?item:item.l;
+    const active = single ? state[setKey]===val : state[setKey].has(val);
+    const b=chip(lbl,active);
+    b.addEventListener('click',()=>{
+      if(single){ state[setKey]=val; }
+      else { state[setKey].has(val)?state[setKey].delete(val):state[setKey].add(val); }
+      renderChips(); render();
+    });
+    c.appendChild(b);
+  });
+}
+function renderChips(){
+  buildChips('tierChips',TIER_ORDER,'tiers');
+  buildChips('parentChips',PARENTS,'parents');
+  buildChips('footChips',FOOT_OPTS,'foots');
+  buildChips('amenChips',AMENITIES,'amens');
+  buildChips('bqChips',[{v:0,l:'Any'},{v:2,l:'Light+'},{v:3,l:'Standard hot+'},{v:4,l:'Strong+'},{v:5,l:'Exceptional'}],'minBq',true);
+  buildChips('useChips',USES,'uses');
+  buildChips('sortChips',[{v:'tier',l:'By tier'},{v:'score',l:'Score, high to low'},{v:'name',l:'A–Z'}],'sort',true);
+}
+
+function matches(d){
+  if(state.q){
+    const q=state.q.toLowerCase();
+    if(!(d.n.toLowerCase().includes(q)||d.p.toLowerCase().includes(q))) return false;
+  }
+  if(state.tiers.size && !state.tiers.has(d.t)) return false;
+  if(state.parents.size && !state.parents.has(d.p)) return false;
+  if(state.foots.size && !state.foots.has(d.f)) return false;
+  for(const a of state.amens){ if(!d.a.includes(a)) return false; }
+  if(state.minBq){ const bq=BREAKFAST[d.n]; if(!bq || bq[0] < state.minBq) return false; }
+  for(const u of state.uses){ if(!d.u.includes(u)) return false; }
+  return true;
+}
+
+function gaugePct(s){ return Math.max(0,Math.min(100,((s-450)/(800-450))*100)); }
+
+function render(){
+  const list=document.getElementById('list');
+  const results=DATA.filter(matches);
+  document.getElementById('count').textContent = results.length+' shown';
+
+  const anyFilter = state.tiers.size||state.parents.size||state.amens.size||state.uses.size||state.foots.size||state.minBq;
+  document.getElementById('filterToggle').classList.toggle('on', !!anyFilter);
+
+  if(!results.length){
+    list.innerHTML='<div class="empty"><b>No chains match</b>Try removing an amenity or tier filter — some combinations don\'t exist in any brand.</div>';
+    return;
+  }
+
+  list.innerHTML='';
+  if(state.sort==='tier'){
+    TIER_ORDER.forEach(tier=>{
+      const inTier=results.filter(d=>d.t===tier).sort((a,b)=>b.s-a.s);
+      if(!inTier.length) return;
+      const h=document.createElement('div');
+      h.className='tierhead';h.textContent=tier;
+      list.appendChild(h);
+      inTier.forEach(d=>list.appendChild(rowEl(d)));
+    });
+  } else {
+    const sorted=[...results].sort((a,b)=> state.sort==='score' ? b.s-a.s : a.n.localeCompare(b.n));
+    sorted.forEach(d=>list.appendChild(rowEl(d)));
+  }
+}
+
+function rowEl(d){
+  const b=document.createElement('button');
+  b.className='row';b.type='button';
+  b.innerHTML=
+    '<div class="rowtop"><span class="rname"></span><span class="rscore"></span></div>'+
+    '<div class="rmeta"></div>'+
+    '<div class="rprice"></div>'+
+    '<div class="gauge"><span style="width:'+gaugePct(d.s)+'%"></span></div>';
+  b.querySelector('.rname').textContent=d.n;
+  b.querySelector('.rscore').textContent=d.s;
+  b.querySelector('.rmeta').textContent='#'+d.r+' of '+d.rt+' in tier · '+d.p;
+  b.querySelector('.rprice').textContent=TIER_PRICE[d.t]+' typical'+(BREAKFAST[d.n]?' · breakfast: '+BQ_LABEL[BREAKFAST[d.n][0]].toLowerCase():'');
+  b.addEventListener('click',()=>openDetail(d));
+  return b;
+}
+
+function openDetail(d){
+  document.getElementById('dNameEl').textContent=d.n;
+  document.getElementById('dParentEl').textContent=d.p+' · '+d.t;
+  document.getElementById('dScoreEl').textContent=d.s;
+
+  const amenHtml=AMENITIES.map(a=>{
+    const has=d.a.includes(a);
+    return '<span class="tag '+(has?'on':'off')+'">'+(has?'✓ ':'– ')+a+'</span>';
+  }).join('');
+
+  const useHtml = d.u.length
+    ? d.u.map(u=>'<span class="tag on">'+u+'</span>').join('')
+    : '<span class="tag off">No standout use case</span>';
+
+  const bq=BREAKFAST[d.n];
+  const bqHtml = bq
+    ? '<div class="bqrow"><div class="bqdots">'+
+        [1,2,3,4,5].map(i=>'<span class="bqdot'+(i<=bq[0]?' on':'')+'"></span>').join('')+
+      '</div><span class="bqname">'+BQ_LABEL[bq[0]]+'</span></div>'+
+      '<p class="dtext">'+bq[1]+'</p>'+
+      '<div class="editorial">Editorial judgment — J.D. Power scores food and beverage but publishes no breakfast-specific brand score.</div>'
+    : '<p class="dtext">No free breakfast at this brand. Budget for it separately, or expect a paid on-site option at full-service properties.</p>';
+
+  document.getElementById('dBodyEl').innerHTML =
+    '<div class="dsec"><div class="dsech">Segment rank</div>'+
+      '<div class="rankline"><b>#'+d.r+'</b> of '+d.rt+' in '+d.t+'</div></div>'+
+    '<div class="dsec"><div class="dsech">Typical nightly rate</div>'+
+      '<div class="pricebig">'+TIER_PRICE[d.t]+'</div>'+
+      '<div class="editorial">Tier-level range, not brand-specific. Market and date move rate far more than the flag does — the same property can double over a holiday or a local event. Use for rough planning only.</div></div>'+
+    '<div class="dsec"><div class="dsech">Free breakfast</div>'+bqHtml+'</div>'+
+    '<div class="dsec"><div class="dsech">Read</div><p class="dtext">'+d.note+'</p></div>'+
+    '<div class="dsec"><div class="dsech">Amenities</div><div class="taglist">'+amenHtml+'</div>'+
+      '<div class="editorial">Brand standard — individual properties vary. Confirm before booking.</div></div>'+
+    '<div class="dsec"><div class="dsech">Footprint — '+FOOT_LABEL[d.f]+'</div><p class="dtext">'+d.fp+'</p>'+
+      '<div class="editorial">Editorial estimate, not survey data.</div></div>'+
+    '<div class="dsec"><div class="dsech">Best for</div><div class="taglist">'+useHtml+'</div></div>';
+
+  document.getElementById('scrim').classList.add('open');
+  document.getElementById('detail').classList.add('open');
+  document.getElementById('detail').scrollTop=0;
+  document.getElementById('closeBtn').focus();
+}
+function closeDetail(){
+  document.getElementById('scrim').classList.remove('open');
+  document.getElementById('detail').classList.remove('open');
+}
+
+/* ---------- Recommender ---------- */
+function pickChips(containerId,items,key,multi){
+  const c=document.getElementById(containerId);
+  c.innerHTML='';
+  items.forEach(it=>{
+    const val=it.v!==undefined?it.v:it;
+    const lbl=it.l!==undefined?it.l:it;
+    const active = multi ? pick[key].has(val) : pick[key]===val;
+    const b=chip(lbl,active);
+    b.addEventListener('click',()=>{
+      if(multi){ pick[key].has(val)?pick[key].delete(val):pick[key].add(val); }
+      else { pick[key]=val; }
+      renderPickChips();
+    });
+    c.appendChild(b);
+  });
+}
+function renderPickChips(){
+  pickChips('pTrip',[{v:'official',l:'Official BLM travel'},{v:'personal',l:'Personal'}],'trip');
+  pickChips('pDest',[{v:'city',l:'Major city'},{v:'town',l:'Small city or town'},{v:'rural',l:'Rural / field'}],'dest');
+  pickChips('pNights',[{v:'short',l:'1–3 nights'},{v:'long',l:'4+ nights'}],'nights');
+  pickChips('pBudget',[{v:'economy',l:'Economy'},{v:'midscale',l:'Midscale'},{v:'upscale',l:'Upscale'},{v:'any',l:'No ceiling'}],'budget');
+  pickChips('pAmen',AMENITIES,'amens',true);
+}
+
+// Destination drives how much availability matters relative to satisfaction score.
+const DEST_WEIGHTS={city:{s:.80,f:.20},town:{s:.60,f:.40},rural:{s:.35,f:.65}};
+
+function runPick(){
+  const note=document.getElementById('pickNote');
+  if(!pick.trip||!pick.dest||!pick.nights||!pick.budget){
+    note.classList.add('show');
+    document.getElementById('results').innerHTML='';
+    return;
+  }
+  note.classList.remove('show');
+
+  const allowedTiers=BUDGET_TIERS[pick.budget];
+  let pool=DATA.filter(d=>{
+    if(!allowedTiers.includes(d.t)) return false;
+    for(const a of pick.amens){ if(!d.a.includes(a)) return false; }
+    // 4+ nights: require a real kitchen or an extended-stay format.
+    if(pick.nights==='long' && !(d.a.includes(A.KIT)||EXTENDED_TIERS.includes(d.t))) return false;
+    // Official travel realistically tops out below the upscale tiers.
+    if(pick.trip==='official' && ['Luxury','Upper Upscale'].includes(d.t)) return false;
+    return true;
+  });
+
+  const w=DEST_WEIGHTS[pick.dest];
+  const scored=pool.map(d=>{
+    const ns=(d.s-450)/350;
+    const nf=(d.f-1)/4;
+    let v = ns*w.s + nf*w.f;
+    if(pick.trip==='official' && d.u.includes(U.PD)) v += .06;
+    if(pick.dest==='rural' && d.u.includes(U.FIELD)) v += .05;
+    if(pick.nights==='long' && d.u.includes(U.LONG)) v += .04;
+    return {d,v};
+  }).sort((a,b)=>b.v-a.v).slice(0,5);
+
+  const res=document.getElementById('results');
+  if(!scored.length){
+    res.innerHTML='<div class="resempty"><b>Nothing qualifies</b>The combination is too narrow — most often a low budget ceiling paired with 4+ nights, or an amenity no brand in that tier offers. Loosen one and rerun.</div>';
+    return;
+  }
+
+  let html='<div class="reshead">Top '+scored.length+' — ranked</div>';
+  scored.forEach((x,i)=>{
+    html+='<button class="rescard" data-name="'+x.d.n.replace(/"/g,'&quot;')+'">'+
+      '<div class="resrank">'+(i+1)+'</div>'+
+      '<div class="restop"><span class="resname">'+x.d.n+'</span><span class="resscore">'+x.d.s+'</span></div>'+
+      '<div class="resmeta">'+x.d.t+' · '+FOOT_LABEL[x.d.f]+' footprint</div>'+
+      '<div class="reswhy">'+whyText(x.d)+'</div></button>';
+  });
+  html+='<div class="caveat">Ranked on J.D. Power score and estimated availability, weighted by your destination answer. Availability is an editorial estimate — verify what actually exists in your specific market.</div>';
+  res.innerHTML=html;
+
+  res.querySelectorAll('.rescard').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      const d=DATA.find(x=>x.n===btn.dataset.name);
+      if(d) openDetail(d);
+    });
+  });
+  res.scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+function whyText(d){
+  const bits=[];
+  if(d.r===1) bits.push('tops its segment');
+  else if(d.r<=3) bits.push('#'+d.r+' in '+d.t.toLowerCase());
+  if(d.f>=4) bits.push('you\'ll usually find one');
+  else if(d.f<=1) bits.push('but thin on the ground — have a backup');
+  if(pick.trip==='official'&&d.u.includes(U.PD)) bits.push('typically per-diem compatible');
+  if(pick.nights==='long'&&d.a.includes(A.KIT)) bits.push('in-room kitchen');
+  if(pick.dest==='rural'&&d.u.includes(U.FIELD)) bits.push('works for field assignments');
+  const lead = bits.length ? bits.join('; ') : 'meets your constraints';
+  let out = lead.charAt(0).toUpperCase()+lead.slice(1)+'.';
+  // Availability can carry a weak brand into the top five. Say so rather than let the rank imply quality.
+  if(d.r > d.rt*0.66){
+    out += ' <span style="color:var(--text-dim)">Ranks here on availability, not quality — it sits in the bottom third of its segment, so check the specific property\'s recent reviews before booking.</span>';
+  }
+  return out;
+}
+
+document.getElementById('runPick').addEventListener('click',runPick);
+
+/* ---------- Tabs ---------- */
+function setTab(which){
+  const browse = which==='browse';
+  document.getElementById('tabBrowse').classList.toggle('on',browse);
+  document.getElementById('tabPick').classList.toggle('on',!browse);
+  document.getElementById('searchrow').style.display = browse?'flex':'none';
+  document.getElementById('list').style.display = browse?'block':'none';
+  document.getElementById('pick').classList.toggle('open',!browse);
+  if(!browse) document.getElementById('filters').classList.remove('open');
+  document.getElementById('count').style.visibility = browse?'visible':'hidden';
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+document.getElementById('tabBrowse').addEventListener('click',()=>setTab('browse'));
+document.getElementById('tabPick').addEventListener('click',()=>setTab('pick'));
+
+document.getElementById('search').addEventListener('input',e=>{state.q=e.target.value;render();});
+document.getElementById('filterToggle').addEventListener('click',()=>{
+  document.getElementById('filters').classList.toggle('open');
+});
+document.getElementById('clearAll').addEventListener('click',()=>{
+  state.tiers.clear();state.parents.clear();state.amens.clear();state.uses.clear();state.foots.clear();
+  state.minBq=0;state.sort='tier';state.q='';document.getElementById('search').value='';
+  renderChips();render();
+});
+document.getElementById('closeBtn').addEventListener('click',closeDetail);
+document.getElementById('scrim').addEventListener('click',closeDetail);
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeDetail();});
+
+renderChips();
+renderPickChips();
+render();
+</script>
+</body>
+</html>
